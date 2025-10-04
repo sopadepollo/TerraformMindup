@@ -35,7 +35,7 @@ jobs:
         run: echo "endpoint=$(terraform output -raw server_ip)" >> $GITHUB_OUTPUT #output llamado "server_ip"
 
       - name: Upload endpoint as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: endpoint
           path: ${{ github.workspace }}/endpoint.txt
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download endpoint artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: endpoint
 
