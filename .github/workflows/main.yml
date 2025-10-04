@@ -1,0 +1,95 @@
+name: Pipeline of Deploy, Test, and Destroy the Infrastructure for Mindup Test
+
+on:
+  push:
+    branches:
+      - main #se activa con cada push a la rama principal
+
+jobs:
+  # 1era parte : Despliega la infraestructura con Terraform (apply de los cambios)
+  deploy:
+    name: 'Terraform Apply'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: Get Infrastructure Endpoint
+        id: get_output
+        run: echo "endpoint=$(terraform output -raw server_ip)" >> $GITHUB_OUTPUT #output llamado "server_ip"
+
+      - name: Upload endpoint as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: endpoint
+          path: ${{ github.workspace }}/endpoint.txt
+          retention-days: 1
+
+  # 2da parte : ejecuta las pruebas de JMeter
+  test:
+    name: 'Run JMeter Performance Test'
+    needs: deploy 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download endpoint artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: endpoint
+
+      - name: Run JMeter Test
+        uses: QA-GURU/jmeter-action@v3
+        with:
+          test-plan-path: ./tests/terraform_test.jmx # ruta al archivo de prueba
+          args: "--propfile 'hostname=$(cat endpoint.txt)'"
+
+      - name: Upload JMeter Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: jmeter-results
+          path: results.jtl
+          retention-days: 5
+
+  # 3er prueba: destruye la infraestructura
+  destroy:
+    name: 'Terraform Destroy'
+    needs: test # esto depende de que las pruebas terminen
+    if: always() #  esto se ejecuta siempre, pasen o fallen las pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2 
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
