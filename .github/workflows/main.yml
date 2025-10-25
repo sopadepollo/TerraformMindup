@@ -6,8 +6,12 @@ on:
       - main #se activa con cada push a la rama principal
   pull_request:
     branches:
-      -main
+      - main
   workflow_dispatch:
+
+  permissions:
+    id-token: write
+    contents: read
 
 jobs:
   # 1era parte : Despliega la infraestructura con Terraform (apply de los cambios)
@@ -24,8 +28,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::634188077694:role/GitHubActions-TerraformMindup-Role
           aws-region: us-east-2
 
       - name: Terraform Init
@@ -36,7 +39,7 @@ jobs:
 
       - name: Get Infrastructure Endpoint
         id: get_output
-        run: echo "endpoint=$(terraform output -raw server_ip)" >> $GITHUB_OUTPUT #output llamado "server_ip"
+        run: echo "endpoint=$(terraform output -raw load_balancer_dns)" >> $GITHUB_OUTPUT 
 
       - name: Upload endpoint as artifact
         uses: actions/upload-artifact@v4
@@ -95,8 +98,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::634188077694:role/GitHubActions-TerraformMindup-Role
           aws-region: us-east-2 
 
       - name: Download terraform.tfstate
