@@ -6,12 +6,13 @@ resource "aws_db_instance" "main" {
   allocated_storage       = 20 
   db_name                 = "mindup" 
   username                = "root"
-  password                = "yourpassword" # Reemplazar con una contraseña segura
+  password                = var.db_password
+   
   vpc_security_group_ids  = [var.sg_id]
   db_subnet_group_name    = aws_db_subnet_group.main.name
   backup_retention_period = 7 
   skip_final_snapshot     = true
-  publicly_accessible     = true 
+  publicly_accessible     = false
   storage_encrypted       = true 
 }
 

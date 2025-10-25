@@ -9,3 +9,9 @@ variable "subnet_ids" {
 variable "sg_id" {
   type = string
 }
+
+variable "db_password" {
+  description = "Password for RDS db"
+  type = string 
+  sensitive = true
+}

@@ -22,7 +22,7 @@ resource "aws_autoscaling_group" "main" {
 
 resource "aws_lambda_function" "main" {
   function_name = "Escalado_Mindup" 
-  role          = "arn:aws:iam::634188077694:role/service-role/Escalado_Mindup-role-cn2nv4fu" 
+  role          = var.lambda_role_arn
   handler       = "lambda_function.lambda_handler" 
   runtime       = "python3.13" 
   filename      = "lambda_function.zip"

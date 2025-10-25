@@ -17,6 +17,7 @@ module "database" {
   vpc_id     = module.network.vpc_id
   subnet_ids = module.network.subnet_ids
   sg_id      = module.security.db_sg_id
+  db_password = var.db_password
 }
 
 module "compute" {
@@ -24,6 +25,7 @@ module "compute" {
   subnet_ids       = module.network.subnet_ids
   sg_id            = module.security.default_sg_id
   target_group_arn = module.others.target_group_arn
+  lambda_role_arn = module.security.lambda_exec_role_arn
 }
 
 module "others" {

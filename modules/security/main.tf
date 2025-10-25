@@ -34,7 +34,7 @@ resource "aws_security_group" "db" {
     from_port   = 3306 
     to_port     = 3306 
     protocol    = "tcp" 
-    cidr_blocks = ["0.0.0.0/0"] 
+    security_groups = [aws_security_group.default.id]
   }
 }
 
@@ -58,4 +58,20 @@ resource "aws_iam_role" "service_role" {
       }
     ]
   })
+}
+
+resource "aws_iam_role" "lambda_exec_role" {
+  name = "Escalado_Mindup_Lambda_Role"
+  assume_role_policy = jsondecode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+
+  })
+  
 }
