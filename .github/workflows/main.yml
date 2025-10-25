@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main #se activa con cada push a la rama principal
+  pull_request:
+    branches:
+      -main
+  workflow_dispatch:
 
 jobs:
   # 1era parte : Despliega la infraestructura con Terraform (apply de los cambios)
@@ -40,6 +44,13 @@ jobs:
           name: endpoint
           path: ${{ github.workspace }}/endpoint.txt
           retention-days: 1
+      
+      - name: Upload terraform.tfstate
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfstate
+          path: terraform.tfstate
+          retention-days: 1
 
   # 2da parte : ejecuta las pruebas de JMeter
   test:
@@ -59,7 +70,7 @@ jobs:
         uses: QA-GURU/jmeter-action@v3
         with:
           test-plan-path: ./tests/terraform_test.jmx # ruta al archivo de prueba
-          args: "--propfile 'hostname=$(cat endpoint.txt)'"
+          args: "-Jhostname=$(cat endpoint.txt)"
 
       - name: Upload JMeter Results
         uses: actions/upload-artifact@v4
@@ -87,6 +98,11 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2 
+
+      - name: Download terraform.tfstate
+        uses: actions/download-artifact@v4
+        with:
+          name: tfstate
 
       - name: Terraform Init
         run: terraform init
